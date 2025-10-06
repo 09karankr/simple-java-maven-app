@@ -1,11 +1,22 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'maven:3.8.7-openjdk-17'
+            args '-v /root/.m2:/root/.m2' // Optional: cache Maven dependencies
+        }
+    }
+
+    environment {
+        MAVEN_OPTS = "-Dmaven.repo.local=.m2/repository"
+    }
+
     stages {
         stage('Build') {
             steps {
                 sh 'mvn -B -DskipTests clean package'
             }
         }
+
         stage('Test') {
             steps {
                 sh 'mvn test'
@@ -16,10 +27,20 @@ pipeline {
                 }
             }
         }
-        stage('Deliver') { 
+
+        stage('Deliver') {
             steps {
-                sh './jenkins/scripts/deliver.sh' 
+                sh './jenkins/scripts/deliver.sh'
             }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
+        failure {
+            echo '❌ Pipeline failed. Check logs for details.'
         }
     }
 }
